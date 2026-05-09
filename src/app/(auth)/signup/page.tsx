@@ -22,7 +22,7 @@ export default function SignupPage({
           <p className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">{searchParams.error}</p>
         ) : null}
 
-        <form action="/api/auth/signup" method="post" className="mt-6 space-y-4">
+        <form action="/api/signup" method="post" className="mt-6 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
             <Input id="name" name="name" required minLength={2} />

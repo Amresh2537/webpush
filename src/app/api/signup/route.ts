@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
   if (!parsed.success) {
     const error = encodeURIComponent(parsed.error.issues[0]?.message || "Invalid input");
-    return NextResponse.redirect(new URL(`/signup?error=${error}`, request.url));
+    return NextResponse.redirect(new URL(`/signup?error=${error}`, request.url), 303);
   }
 
   const exists = await prisma.user.findUnique({
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   });
 
   if (exists) {
-    return NextResponse.redirect(new URL("/signup?error=Email%20is%20already%20registered", request.url));
+    return NextResponse.redirect(new URL("/signup?error=Email%20is%20already%20registered", request.url), 303);
   }
 
   const password = await hashPassword(parsed.data.password);
@@ -59,5 +59,5 @@ export async function POST(request: Request) {
   const verifyUrl = `${getAppUrl()}/api/verify-email?token=${token}`;
   console.log(`Verify email for ${user.email}: ${verifyUrl}`);
 
-  return NextResponse.redirect(new URL("/login?created=1", request.url));
+  return NextResponse.redirect(new URL("/login?created=1", request.url), 303);
 }
