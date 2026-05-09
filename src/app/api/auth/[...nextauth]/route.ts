@@ -1,17 +1,10 @@
+import NextAuth from "next-auth";
+
+import { authOptions } from "@/lib/auth";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Defer all imports to runtime - prevents static analysis failures during Vercel build collection
-export async function GET(request: Request) {
-  const NextAuth = (await import("next-auth")).default;
-  const { authOptions } = await import("@/lib/auth");
-  const handler = NextAuth(authOptions);
-  return handler(request);
-}
+const handler = NextAuth(authOptions);
 
-export async function POST(request: Request) {
-  const NextAuth = (await import("next-auth")).default;
-  const { authOptions } = await import("@/lib/auth");
-  const handler = NextAuth(authOptions);
-  return handler(request);
-}
+export { handler as GET, handler as POST };
