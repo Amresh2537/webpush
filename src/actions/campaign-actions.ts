@@ -26,6 +26,7 @@ export async function createCampaignAction(formData: FormData) {
     fromDate: String(formData.get("fromDate") || ""),
     toDate: String(formData.get("toDate") || ""),
     scheduleAt: String(formData.get("scheduleAt") || ""),
+    saveAsDraft: String(formData.get("saveAsDraft") || ""),
   };
 
   const parsed = campaignSchema.safeParse(payload);
@@ -47,6 +48,12 @@ export async function createCampaignAction(formData: FormData) {
   }
 
   const scheduleAt = parsed.data.scheduleAt ? new Date(parsed.data.scheduleAt) : null;
+  const isDraft = parsed.data.saveAsDraft === "1";
+  const status = isDraft
+    ? CampaignStatus.DRAFT
+    : scheduleAt
+      ? CampaignStatus.SCHEDULED
+      : CampaignStatus.QUEUED;
 
   const campaign = await prisma.campaign.create({
     data: {
@@ -55,14 +62,14 @@ export async function createCampaignAction(formData: FormData) {
       message: parsed.data.message,
       iconUrl: parsed.data.iconUrl || null,
       clickUrl: parsed.data.clickUrl,
-      status: scheduleAt ? CampaignStatus.SCHEDULED : CampaignStatus.QUEUED,
+      status,
       segmentFilter: {
         browser: parsed.data.browser || undefined,
         location: parsed.data.location || undefined,
         fromDate: parsed.data.fromDate || undefined,
         toDate: parsed.data.toDate || undefined,
       },
-      scheduledFor: scheduleAt,
+      scheduledFor: isDraft ? null : scheduleAt,
       stats: {
         create: {
           sentCount: 0,
@@ -74,9 +81,10 @@ export async function createCampaignAction(formData: FormData) {
     },
   });
 
-  const delayMs = scheduleAt ? Math.max(scheduleAt.getTime() - Date.now(), 0) : 0;
+  if (!isDraft) {
+    const delayMs = scheduleAt ? Math.max(scheduleAt.getTime() - Date.now(), 0) : 0;
+    await enqueueCampaignJob(campaign.id, website.id, delayMs);
+  }
 
-  await enqueueCampaignJob(campaign.id, website.id, delayMs);
-
-  redirect("/dashboard?campaign=created");
+  redirect(`/dashboard?campaign=${isDraft ? "draft" : "created"}`);
 }

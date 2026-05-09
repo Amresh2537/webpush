@@ -28,4 +28,5 @@ export const campaignSchema = z.object({
   fromDate: z.string().optional(),
   toDate: z.string().optional(),
   scheduleAt: z.string().optional(),
+  saveAsDraft: z.string().optional(),
 });

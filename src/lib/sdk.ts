@@ -3,12 +3,22 @@ import { getAppUrl } from "@/lib/app-url";
 
 export function getInstallSnippet(website: Website) {
   const appUrl = getAppUrl();
+  const collectUrl = `${appUrl}/api/collect`;
 
   return `<script>
   (async function () {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
-    await navigator.serviceWorker.register('/sw.js');
+    var websiteId = '${website.id}';
+    var websiteDomain = '${website.domain}';
+    var collectUrl = '${collectUrl}';
+    var vapidPublicKey = '${website.vapidPublicKey}';
+    var swConfigQuery =
+      '?websiteId=' + encodeURIComponent(websiteId) +
+      '&domain=' + encodeURIComponent(websiteDomain) +
+      '&collectUrl=' + encodeURIComponent(collectUrl);
+
+    await navigator.serviceWorker.register('/sw.js' + swConfigQuery, { updateViaCache: 'none' });
     const registration = await navigator.serviceWorker.ready;
 
     const permission = await Notification.requestPermission();
@@ -21,17 +31,25 @@ export function getInstallSnippet(website: Website) {
       return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
     };
 
-    const subscription = await registration.pushManager.subscribe({
+    const existingSubscription = await registration.pushManager.getSubscription();
+    const subscription = existingSubscription || await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: toUint8Array('${website.vapidPublicKey}')
+      applicationServerKey: toUint8Array(vapidPublicKey)
     });
 
-    await fetch('${appUrl}/api/collect', {
+    if (registration.active) {
+      registration.active.postMessage({
+        type: 'NOTIFYFLOW_CONFIG',
+        payload: { websiteId, domain: websiteDomain, collectUrl }
+      });
+    }
+
+    await fetch(collectUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        websiteId: '${website.id}',
-        domain: '${website.domain}',
+        websiteId,
+        domain: websiteDomain,
         subscription,
         browser: navigator.userAgent,
         pageUrl: window.location.href,
