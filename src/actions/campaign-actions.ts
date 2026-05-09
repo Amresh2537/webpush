@@ -4,11 +4,12 @@ import { CampaignStatus } from "@prisma/client";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { campaignSchema } from "@/lib/validators";
 import { enqueueCampaignJob } from "@/lib/queue";
 
 export async function createCampaignAction(formData: FormData) {
+  const { prisma } = await import("@/lib/prisma");
+
   const session = await auth();
 
   if (!session?.user?.id) {

@@ -4,11 +4,12 @@ import crypto from "crypto";
 import { redirect } from "next/navigation";
 
 import { getAppUrl } from "@/lib/app-url";
-import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
 import { signupSchema } from "@/lib/validators";
 
 export async function signupAction(formData: FormData) {
+  const { prisma } = await import("@/lib/prisma");
+
   const payload = {
     name: String(formData.get("name") || ""),
     email: String(formData.get("email") || "").toLowerCase(),

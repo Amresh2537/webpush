@@ -5,10 +5,11 @@ import webpush from "web-push";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { websiteSchema } from "@/lib/validators";
 
 export async function createWebsiteAction(formData: FormData) {
+  const { prisma } = await import("@/lib/prisma");
+
   const session = await auth();
 
   if (!session?.user?.id) {
