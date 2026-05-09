@@ -34,7 +34,7 @@ export function LoginForm() {
       return;
     }
 
-    window.location.href = result?.url || "/dashboard";
+    window.location.href = "/dashboard";
   }
 
   return (
