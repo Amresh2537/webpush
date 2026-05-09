@@ -1,9 +1,6 @@
 import { type NextAuthOptions, getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-import { prisma } from "@/lib/prisma";
-import { verifyPassword } from "@/lib/password";
-
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
@@ -22,6 +19,11 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials.password) {
           return null;
         }
+
+        const [{ prisma }, { verifyPassword }] = await Promise.all([
+          import("@/lib/prisma"),
+          import("@/lib/password"),
+        ]);
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email.toLowerCase() },
