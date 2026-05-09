@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getDashboardSummary } from "@/lib/analytics";
 import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 import { AppShell } from "@/components/dashboard/app-shell";
 import { SentChart } from "@/components/dashboard/chart";
 import { Button } from "@/components/ui/button";

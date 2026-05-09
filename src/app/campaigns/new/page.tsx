@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { createCampaignAction } from "@/actions/campaign-actions";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 import { AppShell } from "@/components/dashboard/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
