@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
 import { getAppUrl } from "@/lib/app-url";
-import { prisma } from "@/lib/prisma";
 import { getInstallSnippet } from "@/lib/sdk";
 import { AppShell } from "@/components/dashboard/app-shell";
 import { VerifyButton } from "@/components/websites/verify-button";
@@ -14,6 +13,7 @@ export default async function WebsiteDetailPage({
   params: { websiteId: string };
 }) {
   const { auth } = await import("@/lib/auth");
+  const { prisma } = await import("@/lib/prisma");
   const session = await auth();
 
   if (!session?.user?.id) {
