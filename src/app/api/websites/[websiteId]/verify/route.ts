@@ -3,7 +3,6 @@ import { resolveTxt } from "dns/promises";
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 
 async function verifyMeta(domain: string, token: string) {
   const response = await fetch(domain, { cache: "no-store" });
@@ -25,6 +24,7 @@ export async function POST(
   request: Request,
   { params }: { params: { websiteId: string } },
 ) {
+  const { prisma } = await import("@/lib/prisma");
   const session = await auth();
 
   if (!session?.user?.id) {

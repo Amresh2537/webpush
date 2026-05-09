@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
-
 export async function GET(
   request: Request,
   { params }: { params: { campaignId: string } },
 ) {
+  const { prisma } = await import("@/lib/prisma");
   const campaign = await prisma.campaign.findUnique({
     where: { id: params.campaignId },
     include: { stats: true },
