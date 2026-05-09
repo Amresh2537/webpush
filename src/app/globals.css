@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --muted: #64748b;
+  --ring: #0f766e;
+}
+
+body {
+  color: var(--foreground);
+  background:
+    radial-gradient(circle at 20% 20%, rgba(15, 118, 110, 0.12), transparent 40%),
+    radial-gradient(circle at 80% 0%, rgba(14, 116, 144, 0.12), transparent 35%),
+    var(--background);
+  font-family: var(--font-space-grotesk), sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .mono {
+    font-family: var(--font-plex-mono), monospace;
+  }
+}

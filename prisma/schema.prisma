@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum PlanType {
+  FREE
+  PRO
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  QUEUED
+  SENDING
+  SENT
+  FAILED
+}
+
+model User {
+  id               String    @id @default(cuid()) @map("_id")
+  email            String    @unique
+  name             String?
+  password         String
+  planType         PlanType  @default(FREE)
+  subscriberLimit  Int       @default(1000)
+  emailVerifiedAt  DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  websites         Website[]
+  accounts         Account[]
+  sessions         Session[]
+  verifyTokens     VerificationToken[]
+}
+
+model Website {
+  id               String       @id @default(cuid()) @map("_id")
+  userId           String
+  name             String
+  domain           String
+  logo             String?
+  vapidPublicKey   String
+  vapidPrivateKey  String
+  isVerified       Boolean      @default(false)
+  verificationMode String?
+  ownershipToken   String
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscribers      Subscriber[]
+  campaigns        Campaign[]
+
+  @@unique([userId, domain])
+}
+
+model Subscriber {
+  id         String   @id @default(cuid()) @map("_id")
+  websiteId  String
+  endpoint   String
+  authKey    String
+  p256dhKey  String
+  browser    String
+  location   String?
+  pageUrl    String?
+  createdAt  DateTime @default(now())
+
+  website    Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@unique([websiteId, endpoint])
+  @@index([browser])
+  @@index([location])
+  @@index([createdAt])
+}
+
+model Campaign {
+  id            String         @id @default(cuid()) @map("_id")
+  websiteId      String
+  title          String
+  message        String
+  iconUrl        String?
+  clickUrl       String
+  status         CampaignStatus @default(DRAFT)
+  segmentFilter  Json?
+  scheduledFor   DateTime?
+  sentAt         DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  website        Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  stats          CampaignStats?
+
+  @@index([status])
+  @@index([scheduledFor])
+  @@index([createdAt])
+}
+
+model CampaignStats {
+  id              String   @id @default(cuid()) @map("_id")
+  campaignId      String   @unique
+  sentCount       Int      @default(0)
+  deliveredCount  Int      @default(0)
+  clickedCount    Int      @default(0)
+  failedCount     Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  campaign        Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                String  @id @default(cuid()) @map("_id")
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid()) @map("_id")
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  id         String   @id @default(cuid()) @map("_id")
+  userId     String
+  token      String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
