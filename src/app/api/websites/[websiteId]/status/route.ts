@@ -27,6 +27,6 @@ export async function GET(
   return NextResponse.json({
     isVerified: website.isVerified,
     subscriberCount: website._count.subscribers,
-    connected: website.isVerified && website._count.subscribers > 0,
+    connected: website._count.subscribers > 0,
   });
 }

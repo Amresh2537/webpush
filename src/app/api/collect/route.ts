@@ -8,7 +8,6 @@ export async function POST(request: Request) {
     where: {
       id: body.websiteId,
       domain: body.domain,
-      isVerified: true,
     },
     include: {
       user: true,
@@ -16,7 +15,7 @@ export async function POST(request: Request) {
   });
 
   if (!website) {
-    return NextResponse.json({ error: "Website not verified" }, { status: 404 });
+    return NextResponse.json({ error: "Website not found" }, { status: 404 });
   }
 
   const count = await prisma.subscriber.count({

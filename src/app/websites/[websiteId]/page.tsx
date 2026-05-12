@@ -40,7 +40,7 @@ export default async function WebsiteDetailPage({
   const initialStatus = {
     isVerified: website.isVerified,
     subscriberCount: website._count.subscribers,
-    connected: website.isVerified && website._count.subscribers > 0,
+    connected: website._count.subscribers > 0,
   };
 
   const metaTag = `<meta name="notifyflow-verification" content="${website.ownershipToken}" />`;
@@ -64,33 +64,13 @@ export default async function WebsiteDetailPage({
         <div className="rounded-2xl border border-slate-200 bg-white p-6">
           <h2 className="text-xl font-semibold">Integration Guide</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Follow these four steps to install NotifyFlow on your website.
+            Follow these three steps to install NotifyFlow on your website.
           </p>
 
           <ol className="mt-6 space-y-8">
             {/* Step 1 */}
             <li className="flex gap-4">
-              <StepBadge n={1} done={website.isVerified} />
-              <div className="flex-1">
-                <p className="font-semibold text-slate-800">Verify ownership</p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Prove you own this domain before collecting subscribers. Use the{" "}
-                  <strong>Ownership Verification</strong> section below to add a meta tag or DNS
-                  TXT record, then click <strong>Verify</strong>.
-                </p>
-                {website.isVerified ? (
-                  <p className="mt-2 text-xs font-semibold text-emerald-600">✓ Complete</p>
-                ) : (
-                  <p className="mt-2 text-xs font-semibold text-amber-600">
-                    Pending — see Ownership Verification below
-                  </p>
-                )}
-              </div>
-            </li>
-
-            {/* Step 2 */}
-            <li className="flex gap-4">
-              <StepBadge n={2} done={false} />
+              <StepBadge n={1} done={false} />
               <div className="flex-1">
                 <p className="font-semibold text-slate-800">Upload the service worker</p>
                 <p className="mt-1 text-sm text-slate-500">
@@ -113,9 +93,9 @@ export default async function WebsiteDetailPage({
               </div>
             </li>
 
-            {/* Step 3 */}
+            {/* Step 2 */}
             <li className="flex gap-4">
-              <StepBadge n={3} done={false} />
+              <StepBadge n={2} done={false} />
               <div className="flex-1">
                 <p className="font-semibold text-slate-800">Paste the SDK snippet</p>
                 <p className="mt-1 text-sm text-slate-500">
@@ -135,9 +115,9 @@ export default async function WebsiteDetailPage({
               </div>
             </li>
 
-            {/* Step 4 */}
+            {/* Step 3 */}
             <li className="flex gap-4">
-              <StepBadge n={4} done={initialStatus.connected} />
+              <StepBadge n={3} done={initialStatus.connected} />
               <div className="flex-1">
                 <p className="font-semibold text-slate-800">Test the connection</p>
                 <p className="mt-1 text-sm text-slate-500">
@@ -157,12 +137,17 @@ export default async function WebsiteDetailPage({
           </ol>
         </div>
 
-        {/* ── 3. Ownership Verification ────────────────────────── */}
+        {/* ── 3. Ownership Verification (optional) ────────────── */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6">
-          <h2 className="text-xl font-semibold">Ownership Verification</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold">Ownership Verification</h2>
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+              Optional
+            </span>
+          </div>
           <p className="mt-1 text-sm text-slate-500">
-            Add one of the options below to your website, then click the corresponding Verify
-            button.
+            Optionally prove you own this domain. Add one of the options below to your website,
+            then click the corresponding Verify button.
           </p>
 
           <div className="mt-5 space-y-4">
