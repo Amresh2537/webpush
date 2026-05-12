@@ -21,6 +21,13 @@ enum CampaignStatus {
   FAILED
 }
 
+enum JobStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
 model User {
   id               String    @id @default(cuid()) @map("_id")
   email            String    @unique
@@ -150,4 +157,17 @@ model VerificationToken {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
+}
+
+model CampaignJob {
+  id          String    @id @default(cuid()) @map("_id")
+  campaignId  String
+  websiteId   String
+  status      JobStatus @default(PENDING)
+  runAt       DateTime  @default(now())
+  attempts    Int       @default(0)
+  error       String?
+  createdAt   DateTime  @default(now())
+
+  @@index([status, runAt])
 }

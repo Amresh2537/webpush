@@ -3,8 +3,15 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
-  const session = await auth();
+  let session = null;
+  try {
+    session = await auth();
+  } catch {
+    // auth() may throw if NEXTAUTH_SECRET is missing; render unauthenticated state
+  }
 
   return (
     <main className="min-h-screen px-6 py-12 md:px-10">

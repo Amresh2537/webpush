@@ -1,52 +1,51 @@
-import { Worker } from "bullmq";
-import { CampaignStatus } from "@prisma/client";
+import { CampaignStatus, JobStatus } from "@prisma/client";
 
-import { CAMPAIGN_QUEUE_NAME } from "@/lib/queue";
-import { getRedisConnection } from "@/lib/redis";
 import { prisma } from "@/lib/prisma";
 import { buildSubscriberWhere } from "@/lib/segment";
 import { sendWebPush } from "@/lib/webpush";
 
+const POLL_INTERVAL_MS = 5000;
 const RATE_LIMIT_PER_SECOND = 100;
+const MAX_ATTEMPTS = 3;
 
 function sleep(ms: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-const worker = new Worker(
-  CAMPAIGN_QUEUE_NAME,
-  async (job) => {
-    const { campaignId, websiteId } = job.data as {
-      campaignId: string;
-      websiteId: string;
-    };
+async function processNextJob() {
+  // Find the oldest pending job that is ready to run
+  const job = await prisma.campaignJob.findFirst({
+    where: {
+      status: JobStatus.PENDING,
+      runAt: { lte: new Date() },
+    },
+    orderBy: { runAt: "asc" },
+  });
 
+  if (!job) return;
+
+  // Atomically claim the job to prevent duplicate processing
+  const claimed = await prisma.campaignJob.updateMany({
+    where: { id: job.id, status: JobStatus.PENDING },
+    data: { status: JobStatus.PROCESSING },
+  });
+
+  if (claimed.count === 0) return;
+
+  const { campaignId, websiteId } = job;
+
+  try {
     const campaign = await prisma.campaign.findFirst({
       where: { id: campaignId, websiteId },
-      include: {
-        website: true,
-        stats: true,
-      },
+      include: { website: true, stats: true },
     });
 
-    if (!campaign) {
-      throw new Error("Campaign not found");
-    }
+    if (!campaign) throw new Error("Campaign not found");
 
     await prisma.campaign.update({
       where: { id: campaign.id },
       data: { status: CampaignStatus.SENDING },
     });
-
-    if (!campaign.stats) {
-      await prisma.campaignStats.create({
-        data: {
-          campaignId: campaign.id,
-        },
-      });
-    }
 
     const subscribers = await prisma.subscriber.findMany({
       where: {
@@ -81,7 +80,6 @@ const worker = new Worker(
             campaignId: campaign.id,
           },
         );
-
         sentCount += 1;
         deliveredCount += 1;
       } catch (error) {
@@ -96,17 +94,8 @@ const worker = new Worker(
 
     await prisma.campaignStats.upsert({
       where: { campaignId: campaign.id },
-      update: {
-        sentCount,
-        deliveredCount,
-        failedCount,
-      },
-      create: {
-        campaignId: campaign.id,
-        sentCount,
-        deliveredCount,
-        failedCount,
-      },
+      update: { sentCount, deliveredCount, failedCount },
+      create: { campaignId: campaign.id, sentCount, deliveredCount, failedCount },
     });
 
     await prisma.campaign.update({
@@ -116,19 +105,50 @@ const worker = new Worker(
         sentAt: new Date(),
       },
     });
-  },
-  {
-    connection: getRedisConnection(),
-    concurrency: 1,
-  },
-);
 
-worker.on("completed", (job) => {
-  console.log(`Campaign job completed: ${job.id}`);
-});
+    await prisma.campaignJob.update({
+      where: { id: job.id },
+      data: { status: JobStatus.DONE },
+    });
 
-worker.on("failed", (job, error) => {
-  console.error(`Campaign job failed: ${job?.id}`, error);
-});
+    console.log(`Campaign job completed: ${job.id}`);
+  } catch (error) {
+    console.error(`Campaign job failed: ${job.id}`, error);
 
-console.log("NotifyFlow worker started.");
+    const attempts = job.attempts + 1;
+
+    if (attempts >= MAX_ATTEMPTS) {
+      await prisma.campaignJob.update({
+        where: { id: job.id },
+        data: { status: JobStatus.FAILED, attempts, error: String(error) },
+      });
+      await prisma.campaign.update({
+        where: { id: campaignId },
+        data: { status: CampaignStatus.FAILED },
+      });
+    } else {
+      // Exponential backoff retry
+      const retryAt = new Date(Date.now() + 2000 * Math.pow(2, attempts));
+      await prisma.campaignJob.update({
+        where: { id: job.id },
+        data: { status: JobStatus.PENDING, attempts, runAt: retryAt, error: String(error) },
+      });
+    }
+  }
+}
+
+async function run() {
+  console.log("NotifyFlow push worker started (MongoDB mode).");
+
+  while (true) {
+    try {
+      await processNextJob();
+    } catch (error) {
+      console.error("Worker poll error", error);
+    }
+    await sleep(POLL_INTERVAL_MS);
+  }
+}
+
+run();
+
