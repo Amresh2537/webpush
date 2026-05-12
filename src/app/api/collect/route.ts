@@ -1,5 +1,16 @@
 import { NextResponse } from "next/server";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+// Handle preflight
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
+
 export async function POST(request: Request) {
   const { prisma } = await import("@/lib/prisma");
   const body = await request.json();
@@ -15,7 +26,7 @@ export async function POST(request: Request) {
   });
 
   if (!website) {
-    return NextResponse.json({ error: "Website not found" }, { status: 404 });
+    return NextResponse.json({ error: "Website not found" }, { status: 404, headers: CORS_HEADERS });
   }
 
   const count = await prisma.subscriber.count({
@@ -23,7 +34,7 @@ export async function POST(request: Request) {
   });
 
   if (count >= website.user.subscriberLimit) {
-    return NextResponse.json({ error: "Subscriber limit reached" }, { status: 403 });
+    return NextResponse.json({ error: "Subscriber limit reached" }, { status: 403, headers: CORS_HEADERS });
   }
 
   const authKey = body.subscription?.keys?.auth;
@@ -31,7 +42,7 @@ export async function POST(request: Request) {
   const endpoint = body.subscription?.endpoint;
 
   if (!authKey || !p256dhKey || !endpoint) {
-    return NextResponse.json({ error: "Invalid subscription" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid subscription" }, { status: 400, headers: CORS_HEADERS });
   }
 
   await prisma.subscriber.upsert({
@@ -59,5 +70,5 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true }, { headers: CORS_HEADERS });
 }
