@@ -45,3 +45,26 @@ export async function createWebsiteAction(formData: FormData) {
 
   redirect(`/websites/${website.id}`);
 }
+
+export async function deleteWebsiteAction(formData: FormData) {
+  const { prisma } = await import("@/lib/prisma");
+
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+
+  const websiteId = String(formData.get("websiteId") || "");
+
+  if (!websiteId) {
+    redirect("/onboarding?error=Invalid+website");
+  }
+
+  // Only delete if it belongs to the current user
+  await prisma.website.deleteMany({
+    where: { id: websiteId, userId: session.user.id },
+  });
+
+  redirect("/onboarding?deleted=1");
+}

@@ -7,7 +7,12 @@ import { auth } from "@/lib/auth";
 import { campaignSchema } from "@/lib/validators";
 import { enqueueCampaignJob } from "@/lib/queue";
 
-export async function createCampaignAction(formData: FormData) {
+export type CampaignFormState = { error: string } | null;
+
+export async function createCampaignAction(
+  _prevState: CampaignFormState,
+  formData: FormData,
+): Promise<CampaignFormState> {
   const { prisma } = await import("@/lib/prisma");
 
   const session = await auth();
@@ -33,7 +38,7 @@ export async function createCampaignAction(formData: FormData) {
   const parsed = campaignSchema.safeParse(payload);
 
   if (!parsed.success) {
-    redirect(`/campaigns/new?error=${encodeURIComponent(parsed.error.issues[0]?.message || "Invalid campaign data")}`);
+    return { error: parsed.error.issues[0]?.message || "Invalid input" };
   }
 
   const website = await prisma.website.findFirst({
@@ -45,7 +50,7 @@ export async function createCampaignAction(formData: FormData) {
   });
 
   if (!website) {
-    redirect("/campaigns/new?error=Website%20not%20found%20or%20not%20verified");
+    return { error: "Website not found or not verified" };
   }
 
   const scheduleAt = parsed.data.scheduleAt ? new Date(parsed.data.scheduleAt) : null;

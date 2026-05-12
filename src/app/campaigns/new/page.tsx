@@ -1,52 +1,37 @@
 import { redirect } from "next/navigation";
+
 import { auth } from "@/lib/auth";
-import { createCampaignAction } from "@/actions/campaign-actions";
 import { AppShell } from "@/components/dashboard/app-shell";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { CampaignForm } from "@/components/campaigns/campaign-form";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewCampaignPage({
-  searchParams,
-}: {
-  searchParams: { error?: string };
-}) {
+export default async function NewCampaignPage() {
   const session = await auth();
 
   if (!session?.user?.id) {
     redirect("/login");
   }
 
+  const { prisma } = await import("@/lib/prisma");
+
+  const websites = await prisma.website.findMany({
+    where: { userId: session.user.id, isVerified: true },
+    select: { id: true, name: true, domain: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (websites.length === 0) {
+    redirect("/onboarding?info=Please+add+and+verify+a+website+before+sending+a+campaign");
+  }
+
   return (
     <AppShell
       title="Send notification"
-      description="Create a message to prompt users to take action."
+      description="Create a push notification to broadcast to your subscribers."
       active="campaigns"
     >
-      {searchParams.error ? (
-        <p className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {searchParams.error}
-        </p>
-      ) : null}
-
-      <form className="mt-6 space-y-6" action={createCampaignAction}>
-        <div className="rounded-2xl border border-slate-200 bg-white p-6">
-          <h2 className="text-xl font-semibold">New notification</h2>
-          <div className="mt-6 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input id="title" name="title" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="message">Message</Label>
-              <Input id="message" name="message" required />
-            </div>
-            <Button type="submit">Send</Button>
-          </div>
-        </div>
-      </form>
+      <CampaignForm websites={websites} />
     </AppShell>
   );
 }
