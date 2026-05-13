@@ -108,7 +108,7 @@ export async function GET(request: Request) {
       await prisma.campaign.update({
         where: { id: campaign.id },
         data: {
-          status: failedCount > 0 ? CampaignStatus.FAILED : CampaignStatus.SENT,
+          status: deliveredCount > 0 ? CampaignStatus.SENT : CampaignStatus.FAILED,
           sentAt: new Date(),
         },
       });
