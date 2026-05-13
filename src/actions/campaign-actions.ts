@@ -45,12 +45,11 @@ export async function createCampaignAction(
     where: {
       id: parsed.data.websiteId,
       userId: session.user.id,
-      isVerified: true,
     },
   });
 
   if (!website) {
-    return { error: "Website not found or not verified" };
+    return { error: "Website not found" };
   }
 
   const scheduleAt = parsed.data.scheduleAt ? new Date(parsed.data.scheduleAt) : null;

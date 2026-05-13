@@ -16,13 +16,13 @@ export default async function NewCampaignPage() {
   const { prisma } = await import("@/lib/prisma");
 
   const websites = await prisma.website.findMany({
-    where: { userId: session.user.id, isVerified: true },
+    where: { userId: session.user.id },
     select: { id: true, name: true, domain: true },
     orderBy: { createdAt: "desc" },
   });
 
   if (websites.length === 0) {
-    redirect("/onboarding?info=Please+add+and+verify+a+website+before+sending+a+campaign");
+    redirect("/onboarding?info=Please+add+a+website+before+sending+a+campaign");
   }
 
   return (
