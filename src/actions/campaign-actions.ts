@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { campaignSchema } from "@/lib/validators";
 import { enqueueCampaignJob } from "@/lib/queue";
+import { processJobById } from "@/lib/processJob";
 
 export type CampaignFormState = { error: string } | null;
 
@@ -52,13 +53,8 @@ export async function createCampaignAction(
     return { error: "Website not found" };
   }
 
-  const scheduleAt = parsed.data.scheduleAt ? new Date(parsed.data.scheduleAt) : null;
   const isDraft = parsed.data.saveAsDraft === "1";
-  const status = isDraft
-    ? CampaignStatus.DRAFT
-    : scheduleAt
-      ? CampaignStatus.SCHEDULED
-      : CampaignStatus.QUEUED;
+  const status = isDraft ? CampaignStatus.DRAFT : CampaignStatus.QUEUED;
 
   const campaign = await prisma.campaign.create({
     data: {
@@ -74,7 +70,7 @@ export async function createCampaignAction(
         fromDate: parsed.data.fromDate || undefined,
         toDate: parsed.data.toDate || undefined,
       },
-      scheduledFor: isDraft ? null : scheduleAt,
+      scheduledFor: null,
       stats: {
         create: {
           sentCount: 0,
@@ -87,8 +83,9 @@ export async function createCampaignAction(
   });
 
   if (!isDraft) {
-    const delayMs = scheduleAt ? Math.max(scheduleAt.getTime() - Date.now(), 0) : 0;
-    await enqueueCampaignJob(campaign.id, website.id, delayMs);
+    const job = await enqueueCampaignJob(campaign.id, website.id);
+    // Fire immediately — no waiting for cron
+    await processJobById(job.id);
   }
 
   redirect(`/dashboard?campaign=${isDraft ? "draft" : "created"}`);

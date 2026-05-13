@@ -219,16 +219,7 @@ export function CampaignForm({ websites }: { websites: Website[] }) {
               <Input id="toDate" name="toDate" type="date" />
             </div>
 
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="scheduleAt">
-                Schedule for later{" "}
-                <span className="ml-1 font-normal text-slate-400">(optional)</span>
-              </Label>
-              <Input id="scheduleAt" name="scheduleAt" type="datetime-local" />
-              <p className="text-xs text-slate-500">
-                Leave empty to send immediately.
-              </p>
-            </div>
+
           </div>
         )}
       </div>
